@@ -1,0 +1,36 @@
+# converting timestamp to month, day, year, hour, and day of the week
+
+import pandas as pd
+from datetime import datetime
+import csv
+import numpy as np
+
+# u.data, 100k data points from MovieLens website, fields: UserID, MovieID, rating, timestamp
+file = 'D://DataScience/DataScience-Python3/ml-100k/u.data'
+with open(file, newline='') as data:
+    CSVfile = csv.reader(data, delimiter='\t')
+    TimeLst = list(CSVfile)
+Lst2Array = np.asarray(TimeLst)
+TimeStp = Lst2Array[:,3] #timestamp
+
+#I only grabbed the first three values as a trial
+trial = TimeStp[0:3]
+trial                                 #output: array(['881250949', '881250949', '881250949'], dtype='<U9')
+
+for d in range(len(trial)):
+    ts = trial[d]
+    intts = int(ts)
+    dt = datetime.fromtimestamp(intts)
+    stdt = dt.strftime('%Y%m%d%H')    #output is a string: '1997120410'
+    y = int(stdt[0:4])
+    m = int(stdt[4:6])
+    d = int(stdt[6:8])
+    h = int(stdt[8:10])
+    wd = dt.weekday()
+    TheArray = [int(ts),y,m,d,h,wd]    
+
+
+#output of TheArray are integer values: [881250949, 1997, 12, 4, 3]
+# Up to this point works but I'm trying to make a matrix like I used to in MatLab
+# I think in Python it is considered a nested list
+# also don't forget python likes to go down then across
