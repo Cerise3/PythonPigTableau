@@ -13,17 +13,20 @@ with open(file, newline='') as data:
 Lst2Array = np.asarray(TimeLst)
 TimeStp = Lst2Array[:,3]                #the entire file of timestamps
 
-TS = []
-for d in range(len(trial)):
-    ts = trial[d]
-    intts = int(ts)
-    dt = datetime.fromtimestamp(intts)
-    stdt = dt.strftime('%Y%m%d%H')      #first output is string: '1997120410'
-    y = int(stdt[0:4])                  #first output is integer: 1997
-    m = int(stdt[4:6])                  #first output is integer: 12
-    d = int(stdt[6:8])                  #first output is integer: 04
-    h = int(stdt[8:10])                 #first output is integer: 10
-    wd = dt.weekday()                   #first output is integer: 3, which is Thursday 
-    TheArray = [int(ts),y,m,d,h,wd]     #output: [881250949, 1997, 12, 4, 10, 3]
-    TS.append(TheArray)
+with open('D:\\u.DateStr','w') as f:
+    for a in range(len(TimeStp)):
+        ts = TimeStp[a]
+        intts = int(ts)
+        dt = datetime.fromtimestamp(intts)
+        stdt = dt.strftime('%Y%m%d%H')
+        y = stdt[0:4]
+        m = stdt[4:6]
+        d = stdt[6:8]
+        h = stdt[8:10]
+        wd = str(dt.weekday())
+        TheArray = [ts,y,m,d,h,wd]      #everything in TheArray is a string, because you can only save strings in python
+        for element in TheArray:        #loop through all the elements
+            f.write(element)            #write each element to the file
+            f.write(',')                #write a comma after each element
+        f.write('\n')                   #between iterations start a newline
 
