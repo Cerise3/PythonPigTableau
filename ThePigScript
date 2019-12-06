@@ -1,14 +1,11 @@
 ratings = LOAD '/user/maria_dev/ml-100k/u.data' AS (userID:int, movieID:int, rating:int, ratingTime:int);
-dates = LOAD 'user/maria_dev/ml-100k/u.DateStr' AS (ts:int, yr:int, mo:int, d:int, hr:int, dw:int);
+dates = LOAD 'user/maria_dev/ml-100k/u.date' USING PigStorage(',')
+	AS (rTime:int, yr:int, mo:int, day:int, hr:int, dw:int);
 metadata = LOAD '/user/maria_dev/ml-100k/u.item' USING PigStorage('|')
-	AS (mID:int, mTitle:chararray, rDate:chararray, vDate:chararray, imdbLink:chararray);
-	
-//loading u.item, defining pipe delimited data by these names
-
-nameLookup = FOREACH metadata GENERATE mID, mTitle, 
-	ToUnixTime(ToDate(rDate, 'dd-MMM-yyyy')) AS rTime;
-
-//converts rDate to rTime (unix date as seconds) and puts mID, mTitle and rTime in nameLookup	
+	AS (mID:int, mTitle:chararray, rDate:chararray);
+people = LOAD 'user/maria_dev/ml-100k/u.user' USING PigStorage('|')
+	AS (uID:int, age:int, gender:chararray);
+//loading files: tab, comma, pipe, and pipe delimited
 
 ratingByMovie = GROUP ratings BY movieID;
 
@@ -18,10 +15,8 @@ avgRatings = FOREACH ratingByMovie GENERATE group AS movieID, AVG(ratings.rating
 
 //iterate over ratingByMovie, change name group to movieID, average rating in ratings, and count rating    
 
-oneStar = FILTER avgRatings BY avgRating < 2.0;
-
-//filter the ratings by average rating and only keeping the ones less than 2
-
+TwoAsOne = JOIN metadata BY mID, ratings BY movieID;
+ThreeAsOne = JOIN TwoAsOne BY TwoAsOne:ratingTime, 
 oneStarData = JOIN oneStar BY movieID, nameLookup BY mID;
 
 //this just joins the two based on the movieID or mID
