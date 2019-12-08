@@ -1,30 +1,43 @@
-ratings = LOAD '/user/maria_dev/ml-100k/u.data' AS (userID:int, movieID:int, rating:int, ratingTime:int);
-dates = LOAD 'user/maria_dev/ml-100k/u.date' USING PigStorage(',')
-	AS (rTime:int, yr:int, mo:int, day:int, hr:int, dw:int);
-metadata = LOAD '/user/maria_dev/ml-100k/u.item' USING PigStorage('|')
-	AS (mID:int, mTitle:chararray, rDate:chararray);
-people = LOAD 'user/maria_dev/ml-100k/u.user' USING PigStorage('|')
-	AS (uID:int, age:int, gender:chararray);
-//loading files: tab, comma, pipe, and pipe delimited
+ratings = LOAD '/user/maria_dev/ml-100k/u.data' 
+	AS (userID:int, movieID:int, rating:int, timestamp:int);
+userInfo = LOAD '/user/maria_dev/ml-100k/u.user' USING PigStorage('|') 
+	AS (uID:int,age:int,gender:chararray); 
+metadata = LOAD '/user/maria_dev/ml-100k/u.item' USING PigStorage('|') 
+	AS (mID:int, mTitle:chararray);
+time = LOAD '/user/maria_dev/ml-100k/u.date' USING PigStorage(',')
+	AS (ts:int,yr:int,mo:int,day:int,hr:int,dw:int);
+// loading all the files
 
 ratingByMovie = GROUP ratings BY movieID;
+avgRatings = FOREACH ratingByMovie GENERATE group AS movID, 
+	AVG(ratings.rating) AS avgRating, COUNT(ratings.rating) AS rCount;
+// creating some new fields
 
-//grouping the variable ratings by movieID
+ReJoin = JOIN avgRatings BY movID, ratings BY movieID;
+TwoAsOne = JOIN ReJoin BY ratings::timestamp, time BY ts;
+ThreeAsOne = JOIN TwoAsOne BY ReJoin::ratings::userID, userInfo BY uID; 
+FourAsOne = JOIN ThreeAsOne BY TwoAsOne::ReJoin::ratings::movieID, metadata BY mID;
+// joining all the data together
 
-avgRatings = FOREACH ratingByMovie GENERATE group AS movieID, AVG(ratings.rating) AS avgRating, COUNT(ratings.rating) AS rCount;
+much = FOREACH FourAsOne GENERATE ThreeAsOne::userInfo::uID AS userID,
+	ThreeAsOne::userInfo::age AS age, ThreeAsOne::userInfo::gender AS gender,
+	ThreeAsOne::TwoAsOne::ReJoin::ratings::movieID AS movieID,
+	metadata::mTitle AS title,
+	ThreeAsOne::TwoAsOne::ReJoin::ratings::rating AS rating,
+    	ThreeAsOne::TwoAsOne::ReJoin::avgRatings::avgRating AS AvgRating,
+    	ThreeAsOne::TwoAsOne::ReJoin::avgRatings::rCount AS rCount,
+    	ThreeAsOne::TwoAsOne::time::ts AS timestamp,
+    	ThreeAsOne::TwoAsOne::time::yr AS year,
+    	ThreeAsOne::TwoAsOne::time::mo AS month,
+    	ThreeAsOne::TwoAsOne::time::day AS day,
+    	ThreeAsOne::TwoAsOne::time::hr AS hour,
+    	ThreeAsOne::TwoAsOne::time::dw AS dayofweek;
+// renaming and getting rid of some duplcate fields
 
-//iterate over ratingByMovie, change name group to movieID, average rating in ratings, and count rating    
+DESCRIBE much;
+//much: {userID: int, age: int, gender: chararray, movieID: int, title: chararray,
+//    	rating: int, AvgRating: double, rCount: long,
+//	timestamp: int, year: int, month: int, day: int, hour: int, dayofweek: int}
 
-TwoAsOne = JOIN metadata BY mID, ratings BY movieID;
-ThreeAsOne = JOIN TwoAsOne BY TwoAsOne:ratingTime, 
-oneStarData = JOIN oneStar BY movieID, nameLookup BY mID;
-
-//this just joins the two based on the movieID or mID
-
-FaveWorst = ORDER oneStarData BY oneStar::rCount;
-
-//orders oneStarData by the number of ratings
-
-DUMP FaveWorst;
-
-//it printed by least watched first 
+STORE much INTO '/user/maria_dev/ml-100k/u.alldata' USING PigStorage(',');
+//I saved it here then moved it to github
