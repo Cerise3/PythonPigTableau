@@ -12,10 +12,14 @@ with open(file, newline='') as data:
     TimeLst = list(CSVfile)
 Lst2Array = np.asarray(TimeLst)
 TimeStp = Lst2Array[:,3]                #the entire file of timestamps
+#len(TimeStp)                           #100003
+
+uTS = np.unique(TimeStp)                #you only need one copy of each time stamp
+#len(uTS)                               #49282
 
 with open('D:\\u.DateStr','w') as f:
-    for a in range(len(TimeStp)):
-        ts = TimeStp[a]
+    for a in range(len(uTS)):
+        ts = uTS[a]
         intts = int(ts)
         dt = datetime.fromtimestamp(intts)
         stdt = dt.strftime('%Y%m%d%H')
